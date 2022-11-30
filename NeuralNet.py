@@ -1,6 +1,11 @@
 from random import randint
 from itertools import product
 
+STIMULATION_CUTOFF = 0.75
+NUM_INPUT_NEURONS = 4 # These are directly connected to input so you can't change this number without adding new input manually
+NUM_INTERNAL_NEURONS = 2
+NUM_OUTPUT_NEURONS = 4 # Same as inputs, if you increase this number you have to add additional outputs manually
+
 class Genome:
 
     #inputPaths = []
@@ -14,27 +19,109 @@ class Genome:
         self.internalPaths = list(range(internal))
         
         for neuron in range(inputs):
-            self.inputPaths[neuron] = (randint(0, internal-1), randint(0, 100)/100)
+            self.inputPaths[neuron] = (randint(0, internal-1))#, randint(0, 100)/100)
         for neuron in range(internal):
-            self.internalPaths[neuron] = (randint(0, outputs-1), randint(0,100)/100)
+            self.internalPaths[neuron] = (randint(0, outputs-1))#, randint(0,100)/100)
+
+class Neuron:
+
+    def __init__(self, backLinks):
+        
+        self.backLinks = backLinks
+
+    def __call__(self, *args, **kwds):
+
+        data = []
+
+        stimuli = 0
+        
+        for backLink in self.backLinks:
+
+            data.append(backLink())
+
+        for stimulus in data:
+
+            stimuli += stimulus
+
+        meanOfStimuli = stimuli/len(data)
+
+        if meanOfStimuli > STIMULATION_CUTOFF:
+
+            return 1 # If this neuron is stimulated above the cutoff then it returns a 1
+        
+        else: return 0
+    
+
 
 class NeuralNet:
 
-    numInputs = 4
-    numInternal = 2
-    numOutputs = 4
+    numOfNeurons = NUM_INPUT_NEURONS + NUM_INTERNAL_NEURONS + NUM_OUTPUT_NEURONS
 
-    numOfNeurons = numInputs + numInternal + numOutputs
+    inputNeurons = []
+
+    internalNeurons = []
+
+    outputNeurons = []
     
     def __init__(self) -> None:
         
-        self.genes = Genome(self.numInputs, self.numInternal, self.numOutputs)
+        self.genes = Genome(NUM_INPUT_NEURONS, NUM_INTERNAL_NEURONS, NUM_OUTPUT_NEURONS)
 
-        #Add the actual neural net connections
+        self.inputNeurons.append(Neuron(Agent.checkUp))
+
+        self.inputNeurons.append(Neuron(Agent.checkDown))
+
+        self.inputNeurons.append(Neuron(Agent.checkLeft))
+
+        self.inputNeurons.append(Neuron(Agent.checkRight))
+
+        for i in range(NUM_INTERNAL_NEURONS):
+
+            internalNeuronBackLinks = [[],[]]
+
+            for j in range(NUM_INPUT_NEURONS):
+                if self.genes.inputPaths[j] == i:
+                    #print(j, len(internalNeuronBackLinks), len(self.genes.inputPaths), len(self.inputNeurons))
+                    internalNeuronBackLinks[self.genes.inputPaths[j]].append(self.inputNeurons[j])
+
+            self.internalNeurons.append(Neuron(internalNeuronBackLinks))
+
+        for i in range(NUM_OUTPUT_NEURONS):
+
+            outputNeuronBackLinks = [[],[],[],[]]
+
+            for j in range(NUM_INTERNAL_NEURONS):
+                if self.genes.internalPaths[j] == i:
+                    #print(j, self.genes.internalPaths[j], len(outputNeuronBackLinks), len(self.genes.internalPaths), len(self.internalNeurons))
+                    outputNeuronBackLinks[self.genes.internalPaths[j]].append(self.internalNeurons[j])
+
+            self.outputNeurons.append(Neuron(outputNeuronBackLinks))
+
+    def think(self):
+
+        choice = []
+
+        for neuron in self.outputNeurons:
+
+            choice = neuron()
+
+            if choice > STIMULATION_CUTOFF:
+                choice = neuron # Output which neuron we're on and break
+                break
+
+        decisionSelect = { #This is how you implement a switchesque capability in Python.
+                0:'moveUp',
+                1:'moveDown',
+                2:'moveLeft',
+                3:'moveRight'
+                }
+        
+        return(decisionSelect.get(choice))
+
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, game):
         
         self.neuralNet = NeuralNet()
         """ This is how I was gonna do it but I decided to have each agent register with the board instead
@@ -43,40 +130,51 @@ class Agent:
         self.pos['y'] = randint(0, 255)
         """
 
-        self.pos = board.register(self)
+        self.pos = game.board.register(self)
 
     def act(self):
 
-        up = self.checkUp()
-        down = self.checkDown()
-        left = self.checkLeft()
-        right = self.checkRight()
-
-        self.neuralNet.genes.inputPaths
+        self.neuralNet.think()
 
     def checkUp(self):
 
-        check = game.board.grid.check(self.pos[0], self.pos[1] + 1)
+        check = game.board.grid.check(self.pos[0], self.pos[1] + 1) #returns whatever is in the spot
 
-        return check
+        if check == None:
+
+            return 1 # Return 1 if the space is empty, this will tell the neuron that this is a valid path
+        
+        else: return 0
 
     def checkDown(self):
 
         check = game.board.grid.check(self.pos[0], self.pos[1] - 1)
 
-        return check
+        if check == None:
+
+            return 1 # Return 1 if the space is empty, this will tell the neuron that this is a valid path
+        
+        else: return 0
 
     def checkLeft(self):
 
         check = game.board.grid.check(self.pos[0] - 1, self.pos[1])
 
-        return check
+        if check == None:
+
+            return 1 # Return 1 if the space is empty, this will tell the neuron that this is a valid path
+        
+        else: return 0
 
     def checkRight(self):
 
         check = game.board.grid.check(self.pos[0] + 1, self.pos[1])
 
-        return check
+        if check == None:
+
+            return 1 # Return 1 if the space is empty, this will tell the neuron that this is a valid path
+        
+        else: return 0
 
 class Board:
 
@@ -125,7 +223,7 @@ class Game:
 
         for i in range(255): # This is where I instantiate every agent
 
-            self.agent1 = Agent()
+            self.agent1 = Agent(self)
 
             self.agentList.append(self.agent1)
 
