@@ -34,16 +34,28 @@ class Neuron:
         data = []
 
         stimuli = 0
+
+        print(self.backLinks)
+
+        if type(self.backLinks) == list:
         
-        for backLink in self.backLinks:
+            for backLink in self.backLinks:
 
-            data.append(backLink())
+                data.append(backLink)
 
-        for stimulus in data:
+            for stimulusList in data:
 
-            stimuli += stimulus
+                for stimulus in stimulusList:
 
-        meanOfStimuli = stimuli/len(data)
+                    stimuli += stimulus()
+
+            meanOfStimuli = stimuli/len(data)
+        else:
+
+            print(f'Backlink was not iterable, running as function. Backlink was {self.backLinks}')
+            print(self.backLinks())
+
+            meanOfStimuli = self.backLinks()
 
         if meanOfStimuli > STIMULATION_CUTOFF:
 
@@ -134,9 +146,22 @@ class Agent:
 
     def act(self):
 
-        self.neuralNet.think()
+        decision = self.neuralNet.think()
+
+        decisionSwitch = {
+            'moveUp':self.moveUp,
+            'moveDown':self.moveDown,
+            'moveLeft':self.moveLeft,
+            'moveRight':self.moveRight
+        }
+
+        move = decisionSwitch.get(decision)
+
+        move()
 
     def checkUp(self):
+        
+        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
         check = game.board.grid.check(self.pos[0], self.pos[1] + 1) #returns whatever is in the spot
 
@@ -148,6 +173,8 @@ class Agent:
 
     def checkDown(self):
 
+        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
         check = game.board.grid.check(self.pos[0], self.pos[1] - 1)
 
         if check == None:
@@ -157,6 +184,8 @@ class Agent:
         else: return 0
 
     def checkLeft(self):
+
+        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
         check = game.board.grid.check(self.pos[0] - 1, self.pos[1])
 
@@ -168,6 +197,8 @@ class Agent:
 
     def checkRight(self):
 
+        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
+
         check = game.board.grid.check(self.pos[0] + 1, self.pos[1])
 
         if check == None:
@@ -175,6 +206,30 @@ class Agent:
             return 1 # Return 1 if the space is empty, this will tell the neuron that this is a valid path
         
         else: return 0
+
+    def moveUp(self):
+
+        game.board.move(self.pos, (self.pos[0], self.pos[1]+1))
+
+        self.pos = (self.pos[0], self.pos[1]+1)
+
+    def moveDown(self):
+
+        game.board.move(self.pos, (self.pos[0], self.pos[1]-1))
+
+        self.pos = (self.pos[0], self.pos[1]-1)
+
+    def moveLeft(self):
+
+        game.board.move(self.pos, (self.pos[0]-1, self.pos[1]))
+
+        self.pos = (self.pos[0]-1, self.pos[1])
+
+    def moveRight(self):
+
+        game.board.move(self.pos, (self.pos[0]+1, self.pos[1]))
+
+        self.pos = (self.pos[0]+1, self.pos[1])
 
 class Board:
 
@@ -191,9 +246,9 @@ class Board:
 
         #self.agentList.append(agent)
 
-        spaceOpen = True
+        spaceOpen = False
 
-        while(spaceOpen == True):
+        while(spaceOpen == False):
 
             x = randint(0,254)
 
@@ -201,9 +256,9 @@ class Board:
 
             space = self.check(x,y)
 
-            if space != None:
+            if space == None:
 
-                spaceOpen = False
+                spaceOpen = True
         
         self.grid[x][y] = agent
 
@@ -212,6 +267,12 @@ class Board:
     def check(self, x, y):
 
         return self.grid[x][y]
+
+    def move(self, pos, to):
+
+        self.grid[to[0]][to[1]] = self.grid[pos[0]][pos[1]]
+
+        self.grid[pos[0]][pos[1]] = None
 
 class Game:
 
@@ -227,16 +288,31 @@ class Game:
 
             self.agentList.append(self.agent1)
 
-        for i in self.agentList:
+        """for i in self.agentList:
 
             print(self.board.grid[i.pos[0]][i.pos[1]].neuralNet.genes.inputPaths)
 
-        #{board.grid[agent1.pos[0]][agent1.pos[1]].neuralNet.genes.inputPaths}
+        #{board.grid[agent1.pos[0]][agent1.pos[1]].neuralNet.genes.inputPaths}"""
 
     def tick(self):
 
         for i in self.agentList:
             
-            i.act
+            i.act()
+
+tick = 0
 
 game = Game()
+
+print(game.agent1.pos)
+
+while tick < 255:
+    game.tick()
+    tick += 1
+
+print(game.agent1.pos)
+
+#for agent in game.agentList:
+#    print(f'Agent')
+
+print(f'We done!')
