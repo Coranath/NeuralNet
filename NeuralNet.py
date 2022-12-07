@@ -35,8 +35,6 @@ class Neuron:
 
         stimuli = 0
 
-        print(self.backLinks)
-
         if type(self.backLinks) == list:
         
             for backLink in self.backLinks:
@@ -52,8 +50,8 @@ class Neuron:
             meanOfStimuli = stimuli/len(data)
         else:
 
-            print(f'Backlink was not iterable, running as function. Backlink was {self.backLinks}')
-            print(self.backLinks())
+            #print(f'Backlink was not iterable, running as function. Backlink was {self.backLinks}')
+            #print(self.backLinks())
 
             meanOfStimuli = self.backLinks()
 
@@ -75,17 +73,17 @@ class NeuralNet:
 
     outputNeurons = []
     
-    def __init__(self) -> None:
+    def __init__(self, parent) -> None:
         
         self.genes = Genome(NUM_INPUT_NEURONS, NUM_INTERNAL_NEURONS, NUM_OUTPUT_NEURONS)
 
-        self.inputNeurons.append(Neuron(Agent.checkUp))
+        self.inputNeurons.append(Neuron(parent.checkUp))
 
-        self.inputNeurons.append(Neuron(Agent.checkDown))
+        self.inputNeurons.append(Neuron(parent.checkDown))
 
-        self.inputNeurons.append(Neuron(Agent.checkLeft))
+        self.inputNeurons.append(Neuron(parent.checkLeft))
 
-        self.inputNeurons.append(Neuron(Agent.checkRight))
+        self.inputNeurons.append(Neuron(parent.checkRight))
 
         for i in range(NUM_INTERNAL_NEURONS):
 
@@ -135,7 +133,7 @@ class Agent:
 
     def __init__(self, game):
         
-        self.neuralNet = NeuralNet()
+        self.neuralNet = NeuralNet(self)
         """ This is how I was gonna do it but I decided to have each agent register with the board instead
         Now board will return their position after assigning it and making sure that there are no conflicts
         self.pos['x'] = randint(0, 255)
@@ -160,10 +158,8 @@ class Agent:
         move()
 
     def checkUp(self):
-        
-        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
 
-        check = game.board.grid.check(self.pos[0], self.pos[1] + 1) #returns whatever is in the spot
+        check = game.board.check(self.pos[0], self.pos[1] + 1) #returns whatever is in the spot
 
         if check == None:
 
@@ -173,9 +169,7 @@ class Agent:
 
     def checkDown(self):
 
-        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-
-        check = game.board.grid.check(self.pos[0], self.pos[1] - 1)
+        check = game.board.check(self.pos[0], self.pos[1] - 1)
 
         if check == None:
 
@@ -185,9 +179,7 @@ class Agent:
 
     def checkLeft(self):
 
-        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-
-        check = game.board.grid.check(self.pos[0] - 1, self.pos[1])
+        check = game.board.check(self.pos[0] - 1, self.pos[1])
 
         if check == None:
 
@@ -197,9 +189,7 @@ class Agent:
 
     def checkRight(self):
 
-        print('WOOHOO! Yer in a check function!!!!\n\n\n!!!!!!!!!!!!!!!!!!!!!!!!!!!')
-
-        check = game.board.grid.check(self.pos[0] + 1, self.pos[1])
+        check = game.board.check(self.pos[0] + 1, self.pos[1])
 
         if check == None:
 
@@ -209,27 +199,57 @@ class Agent:
 
     def moveUp(self):
 
-        game.board.move(self.pos, (self.pos[0], self.pos[1]+1))
+        try:
 
-        self.pos = (self.pos[0], self.pos[1]+1)
+            game.board.move(self.pos, (self.pos[0], self.pos[1]+1))
+
+            self.pos = (self.pos[0], self.pos[1]+1)
+
+        except:pass
+
+            #print(f'Agent {self} tried to move out of bounds! Press enter to continue: ')
+            #input()
 
     def moveDown(self):
 
-        game.board.move(self.pos, (self.pos[0], self.pos[1]-1))
+        try:
 
-        self.pos = (self.pos[0], self.pos[1]-1)
+            game.board.move(self.pos, (self.pos[0], self.pos[1]-1))
+
+            self.pos = (self.pos[0], self.pos[1]-1)
+
+        except:pass
+
+            #print(f'Agent {self} tried to move out of bounds! Press enter to continue: ')
+            #input()
+
 
     def moveLeft(self):
 
-        game.board.move(self.pos, (self.pos[0]-1, self.pos[1]))
+        try:
 
-        self.pos = (self.pos[0]-1, self.pos[1])
+            game.board.move(self.pos, (self.pos[0]-1, self.pos[1]))
+
+            self.pos = (self.pos[0]-1, self.pos[1])
+
+        except:pass
+
+            #print(f'Agent {self} tried to move out of bounds! Press enter to continue: ')
+            #input()
+
 
     def moveRight(self):
 
-        game.board.move(self.pos, (self.pos[0]+1, self.pos[1]))
+        try:
 
-        self.pos = (self.pos[0]+1, self.pos[1])
+            game.board.move(self.pos, (self.pos[0]+1, self.pos[1]))
+
+            self.pos = (self.pos[0]+1, self.pos[1])
+
+        except: pass
+
+            #print(f'Agent {self} tried to move out of bounds! Press enter to continue: ')
+            #input()
 
 class Board:
 
@@ -266,13 +286,25 @@ class Board:
 
     def check(self, x, y):
 
-        return self.grid[x][y]
+        try:
+
+            return self.grid[x][y]
+
+        except:
+
+            #print(f'An agent checked and found the edge of the world! Please press enter to continue!')
+            #input()
+            return 0
+
 
     def move(self, pos, to):
 
         self.grid[to[0]][to[1]] = self.grid[pos[0]][pos[1]]
 
         self.grid[pos[0]][pos[1]] = None
+
+    def display(self):
+        print(self.grid)
 
 class Game:
 
@@ -307,6 +339,7 @@ game = Game()
 print(game.agent1.pos)
 
 while tick < 255:
+    print(tick)
     game.tick()
     tick += 1
 
