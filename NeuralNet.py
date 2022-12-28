@@ -5,6 +5,8 @@ STIMULATION_CUTOFF = 0.75
 NUM_INPUT_NEURONS = 4 # These are directly connected to input so you can't change this number without adding new input manually
 NUM_INTERNAL_NEURONS = 2
 NUM_OUTPUT_NEURONS = 4 # Same as inputs, if you increase this number you have to add additional outputs manually
+NUM_AGENTS = 10
+GAME_LENGTH = 64
 
 class Genome:
 
@@ -18,9 +20,9 @@ class Genome:
 
         self.internalPaths = list(range(internal))
         
-        for neuron in range(inputs):
+        for neuron in range(inputs-1):
             self.inputPaths[neuron] = (randint(0, internal-1))#, randint(0, 100)/100)
-        for neuron in range(internal):
+        for neuron in range(internal-1):
             self.internalPaths[neuron] = (randint(0, outputs-1))#, randint(0,100)/100)
 
 class Neuron:
@@ -31,23 +33,22 @@ class Neuron:
 
     def __call__(self, *args, **kwds):
 
-        data = []
-
         stimuli = 0
 
         if type(self.backLinks) == list:
+
+            data = [i for i in self.backLinks if i != []]
+
+            if data == []:
+                return 0
         
-            for backLink in self.backLinks:
-
-                data.append(backLink)
-
             for stimulusList in data:
 
                 for stimulus in stimulusList:
 
                     stimuli += stimulus()
 
-            meanOfStimuli = stimuli/len(data)
+            meanOfStimuli = stimuli/len(data[0])
         else:
 
             #print(f'Backlink was not iterable, running as function. Backlink was {self.backLinks}')
@@ -108,16 +109,24 @@ class NeuralNet:
             self.outputNeurons.append(Neuron(outputNeuronBackLinks))
 
     def think(self):
+        """Goodies"""
 
         choice = []
+        counter = 0
 
         for neuron in self.outputNeurons:
 
             choice = neuron()
 
+            print(f'Choice = {choice}')
+
             if choice > STIMULATION_CUTOFF:
-                choice = neuron # Output which neuron we're on and break
+                # break before incrementing counter so that it's on the right neuron
                 break
+
+            counter += 1
+
+        print(f'Choice after loop = {choice}')
 
         decisionSelect = { #This is how you implement a switchesque capability in Python.
                 0:'moveUp',
@@ -125,8 +134,10 @@ class NeuralNet:
                 2:'moveLeft',
                 3:'moveRight'
                 }
+
+        print(f'Decision = {decisionSelect.get(counter)}')
         
-        return(decisionSelect.get(choice))
+        return(decisionSelect.get(counter))
 
 
 class Agent:
@@ -142,6 +153,8 @@ class Agent:
 
         self.pos = game.board.register(self)
 
+        self.startingPos = self.pos
+
     def act(self):
 
         decision = self.neuralNet.think()
@@ -153,7 +166,7 @@ class Agent:
             'moveRight':self.moveRight
         }
 
-        move = decisionSwitch.get(decision)
+        move = decisionSwitch.get(decision, self.checkUp)
 
         move()
 
@@ -292,7 +305,7 @@ class Board:
 
         except:
 
-            #print(f'An agent checked and found the edge of the world! Please press enter to continue!')
+            print(f'An agent checked and found the edge of the world! Please press enter to continue!')
             #input()
             return 0
 
@@ -314,7 +327,7 @@ class Game:
 
         self.agentList = []
 
-        for i in range(255): # This is where I instantiate every agent
+        for i in range(NUM_AGENTS): # This is where I instantiate every agent
 
             self.agent1 = Agent(self)
 
@@ -338,12 +351,15 @@ game = Game()
 
 print(game.agent1.pos)
 
-while tick < 255:
-    print(tick)
+while tick < GAME_LENGTH:
+    print(tick, end='\r')
     game.tick()
     tick += 1
 
 print(game.agent1.pos)
+
+for agent in game.agentList:
+    print(agent.startingPos, agent.pos)
 
 #for agent in game.agentList:
 #    print(f'Agent')
